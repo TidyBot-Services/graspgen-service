@@ -5,6 +5,7 @@ dist/
 build/
 .eggs/
 contact_graspnet_pytorch/
+Pointnet_Pointnet2_pytorch/
 cgn_repo/
 *.pt
 *.pth

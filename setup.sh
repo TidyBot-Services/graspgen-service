@@ -8,26 +8,25 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
 echo "=== Installing Python dependencies ==="
-pip install -r requirements.txt
+pip install fastapi uvicorn "numpy<2" opencv-python Pillow scipy requests trimesh pyyaml pyrender
 
 echo "=== Cloning Contact-GraspNet PyTorch ==="
 if [ ! -d "contact_graspnet_pytorch" ]; then
     git clone https://github.com/elchun/contact_graspnet_pytorch.git cgn_repo
-    # Copy the package into our service directory
     cp -r cgn_repo/contact_graspnet_pytorch ./contact_graspnet_pytorch
     cp -r cgn_repo/checkpoints ./contact_graspnet_pytorch/checkpoints
     rm -rf cgn_repo
+    # Patch torch.load for PyTorch >= 2.6
+    sed -i 's/torch.load(filename)/torch.load(filename, weights_only=False)/' contact_graspnet_pytorch/checkpoints.py
 else
     echo "contact_graspnet_pytorch already exists, skipping clone"
 fi
 
-echo "=== Installing Contact-GraspNet package ==="
-cd "$SCRIPT_DIR"
-# Install pointnet2 ops if needed
-if [ -d "contact_graspnet_pytorch/pointnet2" ]; then
-    cd contact_graspnet_pytorch/pointnet2
-    pip install -e . 2>/dev/null || echo "pointnet2 ops install skipped (may need manual compilation)"
-    cd "$SCRIPT_DIR"
+echo "=== Cloning Pointnet2 PyTorch ==="
+if [ ! -d "Pointnet_Pointnet2_pytorch" ]; then
+    git clone https://github.com/yanx27/Pointnet_Pointnet2_pytorch.git
+else
+    echo "Pointnet_Pointnet2_pytorch already exists, skipping clone"
 fi
 
 echo ""

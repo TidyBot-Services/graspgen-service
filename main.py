@@ -23,9 +23,12 @@ from pydantic import BaseModel, Field
 CGN_DIR = os.path.join(os.path.dirname(__file__), "contact_graspnet_pytorch")
 CKPT_DIR = os.path.join(CGN_DIR, "checkpoints", "contact_graspnet")
 
-# Add CGN to path for imports
-if CGN_DIR not in sys.path:
-    sys.path.insert(0, os.path.dirname(__file__))
+# Add CGN and dependencies to path for imports
+SERVICE_DIR = os.path.dirname(os.path.abspath(__file__))
+POINTNET_DIR = os.path.join(SERVICE_DIR, "Pointnet_Pointnet2_pytorch")
+for p in [SERVICE_DIR, POINTNET_DIR]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
