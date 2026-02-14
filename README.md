@@ -5,7 +5,7 @@ Backend 6-DOF grasp pose generation service for TidyBot frontend agents. Uses [C
 ## Service URL
 
 ```
-http://158.130.109.188:8001
+http://158.130.109.188:8002
 ```
 
 ## Quick Start (Client)
@@ -15,7 +15,7 @@ http://158.130.109.188:8001
 ```python
 from client import GraspGenClient
 
-client = GraspGenClient("http://158.130.109.188:8001")
+client = GraspGenClient("http://158.130.109.188:8002")
 
 # Generate grasps from a 16-bit depth PNG (values in mm)
 grasps = client.generate("depth.png")
@@ -143,12 +143,12 @@ bash setup.sh
 
 # Run
 python main.py
-# Or: uvicorn main:app --host 0.0.0.0 --port 8001
+# Or: uvicorn main:app --host 0.0.0.0 --port 8002
 ```
 
 ### Interactive Docs
 
-Visit `http://158.130.109.188:8001/docs` for auto-generated Swagger UI.
+Visit `http://158.130.109.188:8002/docs` for auto-generated Swagger UI.
 
 ## Model
 

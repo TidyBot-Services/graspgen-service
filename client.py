@@ -4,7 +4,7 @@ TidyBot GraspGen Service — Python Client SDK
 Usage:
     from client import GraspGenClient
 
-    client = GraspGenClient("http://<backend-host>:8001")
+    client = GraspGenClient("http://<backend-host>:8002")
 
     # Check service health
     health = client.health()
@@ -39,7 +39,7 @@ from typing import Optional, Union
 class GraspGenClient:
     """Client SDK for the TidyBot GraspGen 6-DOF Grasp Pose Generation Service."""
 
-    def __init__(self, base_url: str = "http://localhost:8001", timeout: float = 60.0):
+    def __init__(self, base_url: str = "http://localhost:8002", timeout: float = 60.0):
         """
         Args:
             base_url: The URL where the GraspGen service is hosted.

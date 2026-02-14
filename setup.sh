@@ -33,4 +33,4 @@ fi
 echo ""
 echo "=== Setup complete ==="
 echo "Start the service with: python main.py"
-echo "Or: uvicorn main:app --host 0.0.0.0 --port 8001"
+echo "Or: uvicorn main:app --host 0.0.0.0 --port 8002"
