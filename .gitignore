@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.eggs/
+contact_graspnet_pytorch/
+cgn_repo/
+*.pt
+*.pth
+results/
