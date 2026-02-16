@@ -10,12 +10,12 @@ http://158.130.109.188:8002
 
 ## Quick Start (Client)
 
-**Only dependency:** `pip install requests numpy`
+**Only dependency:** `numpy` (for grasp transforms). The client uses Python stdlib (`urllib`) — no `requests` needed.
 
 ```python
-from client import GraspGenClient
+from service_clients.graspgen.client import GraspGenClient
 
-client = GraspGenClient("http://158.130.109.188:8002")
+client = GraspGenClient()  # default: http://158.130.109.188:8002
 
 # Generate grasps from a 16-bit depth PNG (values in mm)
 grasps = client.generate("depth.png")
