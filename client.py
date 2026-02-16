@@ -2,74 +2,64 @@
 TidyBot GraspGen Service — Python Client SDK
 
 Usage:
-    from client import GraspGenClient
+    from services.graspgen.client import GraspGenClient
 
-    client = GraspGenClient("http://<backend-host>:8002")
-
-    # Check service health
-    health = client.health()
-    print(health)
-
-    # Generate grasps from a depth image file (16-bit PNG, values in mm)
-    grasps = client.generate("depth.png")
+    client = GraspGenClient()
+    grasps = client.generate(depth_bytes, num_grasps=10)
     for g in grasps:
-        print(f"Score: {g['score']:.3f}, Transform:\\n{g['transform']}")
-
-    # Generate with a target object mask
-    grasps = client.generate("depth.png", mask="mask.png", num_grasps=5)
-
-    # Full response with metadata
-    result = client.generate_full("depth.png", num_grasps=20)
-    print(f"Generated {result['num_grasps']} grasps in {result['inference_ms']:.0f}ms")
-
-    # Generate from numpy depth array (float32, meters)
-    import numpy as np
-    depth = np.load("depth.npy")
-    grasps = client.generate(depth, depth_scale=1.0)
+        print(f"Score: {g['score']:.3f}")
 """
 
 import base64
 import io
-import requests
+import json
+import urllib.request
+import urllib.error
 import numpy as np
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 
 class GraspGenClient:
     """Client SDK for the TidyBot GraspGen 6-DOF Grasp Pose Generation Service."""
 
-    def __init__(self, base_url: str = "http://localhost:8002", timeout: float = 60.0):
-        """
-        Args:
-            base_url: The URL where the GraspGen service is hosted.
-            timeout: Request timeout in seconds.
-        """
-        self.base_url = base_url.rstrip("/")
+    def __init__(self, host: str = "http://158.130.109.188:8002", timeout: float = 60.0):
+        self.host = host.rstrip("/")
         self.timeout = timeout
 
+    def _post(self, path: str, payload: dict) -> dict:
+        data = json.dumps(payload).encode()
+        req = urllib.request.Request(
+            f"{self.host}{path}", data=data,
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            return json.loads(resp.read())
+
+    def _get(self, path: str) -> dict:
+        req = urllib.request.Request(f"{self.host}{path}")
+        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            return json.loads(resp.read())
+
     def health(self) -> dict:
-        """
-        Check service health and GPU status.
+        """Check service health and GPU status."""
+        return self._get("/health")
 
-        Returns:
-            dict with keys: status, device, gpu_name, gpu_memory_mb, model_loaded, model_name
-        """
-        r = requests.get(f"{self.base_url}/health", timeout=self.timeout)
-        r.raise_for_status()
-        return r.json()
-
-    def _encode_image(self, image) -> str:
+    @staticmethod
+    def _encode_image(image) -> str:
         """Encode image to base64 from file path, bytes, numpy array, or pass through if already base64."""
         if isinstance(image, np.ndarray):
             buf = io.BytesIO()
             np.save(buf, image)
             return base64.b64encode(buf.getvalue()).decode()
         elif isinstance(image, (str, Path)):
-            return base64.b64encode(Path(image).read_bytes()).decode()
+            p = Path(image)
+            if p.exists():
+                return base64.b64encode(p.read_bytes()).decode()
+            return image
         elif isinstance(image, bytes):
             return base64.b64encode(image).decode()
-        return image  # assume already base64
+        return image
 
     def generate(
         self,
@@ -84,22 +74,15 @@ class GraspGenClient:
         Generate 6-DOF grasp poses from a depth image. Returns grasps only.
 
         Args:
-            depth_image: Depth image as file path (str/Path), raw bytes, numpy array, or base64 string.
-                         For file paths: expects 16-bit PNG (values in mm by default).
-                         For numpy arrays: expects float32 (set depth_scale=1.0 if already in meters).
-            mask: Optional binary mask as file path, bytes, numpy array, or base64 string.
-                  White (255) = target object, black (0) = background.
-            camera_matrix: 3x3 camera intrinsic matrix. Defaults to RealSense D435 (640x480).
+            depth_image: Depth image as file path, raw bytes, numpy array, or base64 string.
+            mask: Optional binary mask (same formats).
+            camera_matrix: 3x3 camera intrinsic matrix.
             num_grasps: Maximum number of grasps to return (1-200).
-            z_range: [min, max] depth range in meters to filter point cloud.
+            z_range: [min, max] depth range in meters.
             depth_scale: Scale factor to convert depth values to meters.
 
         Returns:
-            List of grasp dicts, each with:
-                - transform: 4x4 homogeneous transform (list of lists)
-                - score: float quality score (higher = better)
-                - contact_point: [x, y, z] in camera frame (meters)
-                - gripper_opening: float gripper width (meters)
+            List of dicts with keys: transform (4x4), score, contact_point [x,y,z], gripper_opening.
         """
         result = self.generate_full(
             depth_image, mask=mask, camera_matrix=camera_matrix,
@@ -119,16 +102,8 @@ class GraspGenClient:
         """
         Generate grasps with full metadata.
 
-        Args:
-            Same as generate().
-
         Returns:
-            dict with keys:
-                - grasps: list of grasp poses
-                - num_grasps: int
-                - device: str (cuda/cpu)
-                - inference_ms: float
-                - point_cloud_size: int
+            dict with keys: grasps, num_grasps, device, inference_ms, point_cloud_size.
         """
         payload = {
             "depth_image": self._encode_image(depth_image),
@@ -140,21 +115,11 @@ class GraspGenClient:
             payload["mask"] = self._encode_image(mask)
         if camera_matrix is not None:
             payload["camera_matrix"] = camera_matrix
+        return self._post("/generate", payload)
 
-        r = requests.post(f"{self.base_url}/generate", json=payload, timeout=self.timeout)
-        r.raise_for_status()
-        return r.json()
-
-    def get_transforms_as_numpy(self, grasps: list[dict]) -> np.ndarray:
-        """
-        Convert list of grasp dicts to Nx4x4 numpy array of transforms.
-
-        Args:
-            grasps: List of grasp dicts from generate().
-
-        Returns:
-            np.ndarray of shape (N, 4, 4) — homogeneous transforms ready for Franka arm.
-        """
+    @staticmethod
+    def get_transforms_as_numpy(grasps: list[dict]) -> np.ndarray:
+        """Convert list of grasp dicts to Nx4x4 numpy array of transforms."""
         return np.array([g["transform"] for g in grasps])
 
 
