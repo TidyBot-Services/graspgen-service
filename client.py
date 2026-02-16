@@ -2,7 +2,7 @@
 TidyBot GraspGen Service — Python Client SDK
 
 Usage:
-    from services.graspgen.client import GraspGenClient
+    from service_clients.graspgen.client import GraspGenClient
 
     client = GraspGenClient()
     grasps = client.generate(depth_bytes, num_grasps=10)
