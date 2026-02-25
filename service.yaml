@@ -1,0 +1,15 @@
+name: graspgen-service
+version: 0.1.0
+description: 6-DOF grasp pose generation using Contact-GraspNet (PyTorch) on GPU
+
+requires:
+  gpu: true
+  vram_gb: 8
+
+deploy:
+  image: tidybot/graspgen-service:0.1.0
+  port: 8002
+  health: /health
+  ready_timeout: 120
+
+client: client.py
