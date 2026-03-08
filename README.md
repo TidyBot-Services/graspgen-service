@@ -13,7 +13,7 @@ http://158.130.109.188:8002
 **Only dependency:** `numpy` (for grasp transforms). The client uses Python stdlib (`urllib`) — no `requests` needed.
 
 ```python
-from service_clients.graspgen.client import GraspGenClient
+from client import GraspGenClient  # client.py lives in this repo
 
 client = GraspGenClient()  # default: http://158.130.109.188:8002
 
@@ -137,7 +137,7 @@ The 4x4 transform follows standard robotics convention:
 
 ```bash
 # Clone and setup
-git clone https://github.com/TidyBot-Services/graspgen-service.git
+git clone https://github.com/TidyBot-Services/graspgen-service.git  # or use local copy
 cd graspgen-service
 bash setup.sh
 
@@ -158,7 +158,14 @@ Visit `http://158.130.109.188:8002/docs` for auto-generated Swagger UI.
 - [Original TF code (NVIDIA)](https://github.com/NVlabs/contact_graspnet)
 - [PyTorch port](https://github.com/elchun/contact_graspnet_pytorch)
 
-## Discovery
+## Deployment
 
-This service is registered in `catalog.json` at:
-https://github.com/TidyBot-Services/backend_wishlist/blob/main/catalog.json
+Deploy via the **deploy agent** running on your compute server:
+
+```bash
+curl -X POST http://<server>:9000/deploy \
+  -H "Content-Type: application/json" \
+  -d '{"name": "graspgen", "image": "tidybot/graspgen-service", "port": 8002, "gpu": true}'
+```
+
+Discover running instances: `GET http://<server>:9000/services`
